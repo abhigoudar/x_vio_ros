@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   sensor_msgs
   std_msgs
+  nav_msgs
 )
 
 # Set build flags, depending on the architecture

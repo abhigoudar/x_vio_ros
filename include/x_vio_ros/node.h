@@ -26,6 +26,7 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Range.h>
 #include <geometry_msgs/Vector3Stamped.h> // Sun angle messages
 #include <tf/transform_broadcaster.h>
@@ -66,6 +67,11 @@ private:
    * Publisher for pose with covariance at image rate.
    */
   ros::Publisher pub_pose_with_cov_image_rate_;
+
+  /**
+   * Publisher for odometry with covariance at image rate.
+   */
+  ros::Publisher pub_odom_image_rate_;
 
 #ifdef VERBOSE
   image_transport::Publisher tracker_pub_;       ///< Publishes tracker output image

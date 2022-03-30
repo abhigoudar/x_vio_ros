@@ -466,6 +466,7 @@ void Node::setInterfaceWithHandle(ros::NodeHandle& nh)
    **************/
 
   pub_pose_with_cov_image_rate_ = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_with_cov_image_rate", 2);
+  pub_odom_image_rate_ = nh.advertise<nav_msgs::Odometry>("odom_image_rate", 2);
 
 #ifdef VERBOSE
   pub_pose_with_cov_imu_rate_ = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_with_cov_imu_rate", 2);
@@ -635,8 +636,11 @@ void Node::publishImageRate(const State& state) const
   // Parse state
   const double t = state.getTime();
   const Vector3 p = state.getPosition();
+  const Vector3 v = state.getLinearVelocity();
+  const Vector3 w = state.getAngularVelocity();
   const Quaternion q = state.getOrientation();
   const Matrix& pose_cov = state.getPoseCovariance();
+  const Matrix& lin_vel_cov = state.getLinearVelocityCovariance();
 
   // Just compute the header once for all messages
   // WARNING: header's seq is overwritten by ROS. There is no point in setting
@@ -656,6 +660,32 @@ void Node::publishImageRate(const State& state) const
   // Publishing   Pose @ image rate
   if(pub_pose_with_cov_image_rate_.getNumSubscribers()) // pose
     pub_pose_with_cov_image_rate_.publish(msg_pose);
+
+  // TODO: move this to IMU rate
+  // TODO: move frames to params.yaml
+  nav_msgs::Odometry odom_msg;
+  odom_msg.header.frame_id = "odom";
+  odom_msg.header.stamp = ros::Time(t);
+  odom_msg.child_frame_id = "base_link";
+  odom_msg.pose = msg_pose.pose;
+  odom_msg.twist.twist.linear.x = v(0);
+  odom_msg.twist.twist.linear.y = v(1);
+  odom_msg.twist.twist.linear.z = v(2);
+  odom_msg.twist.twist.angular.x = w(0);
+  odom_msg.twist.twist.angular.y = w(1);
+  odom_msg.twist.twist.angular.z = w(2);
+  // TODO: populate variance appropriately
+  odom_msg.twist.covariance[0] = lin_vel_cov(0,0);
+  odom_msg.twist.covariance[7] = lin_vel_cov(1,1);
+  odom_msg.twist.covariance[14] = lin_vel_cov(2,2);
+  odom_msg.twist.covariance[21] = params_.n_w * params_.n_w;
+  odom_msg.twist.covariance[28] = params_.n_w * params_.n_w;
+  odom_msg.twist.covariance[35] = params_.n_w * params_.n_w;
+
+  // Publishing   Odometry @ image rate
+  if(pub_odom_image_rate_.getNumSubscribers()) // odom
+    pub_odom_image_rate_.publish(odom_msg);
+
 #ifdef VERBOSE
   // Publishing   tf @ image rate
   if(false)//pub_tf_image_rate_.getNumSubscribers()) // transform
